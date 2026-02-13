@@ -17,9 +17,10 @@
     wideArea: { enabled: false },
   },
 
-  // Disable browser automation surface for a Telegram + ACP-only deployment.
+  // Enable browser automation for code testing.
+  // Keep evaluate disabled to reduce arbitrary-JS execution risk.
   browser: {
-    enabled: false,
+    enabled: true,
     evaluateEnabled: false,
   },
 

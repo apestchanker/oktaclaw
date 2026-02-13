@@ -1,7 +1,7 @@
 services:
-  openclaw-gateway:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
-    container_name: openclaw-gateway
+  oktaclaw-gateway:
+    image: ${OPENCLAW_IMAGE:-oktaclaw:local}
+    container_name: oktaclaw-gateway
     restart: unless-stopped
     init: true
     read_only: true
@@ -22,9 +22,9 @@ services:
       OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
 
-      # Security profile: disable unneeded method surfaces.
-      OPENCLAW_SECURITY_PROFILE: minimal
-      OPENCLAW_DISABLE_BROWSER_API: "1"
+      # Security profile: keep explicit per-surface toggles (do not force "minimal").
+      # Keep browser API enabled for code testing flows.
+      OPENCLAW_DISABLE_BROWSER_API: "${OPENCLAW_DISABLE_BROWSER_API:-0}"
       OPENCLAW_DISABLE_SKILLS_API: "1"
       OPENCLAW_DISABLE_WIZARD_API: "1"
       OPENCLAW_DISABLE_UPDATE_API: "1"
@@ -32,7 +32,8 @@ services:
       OPENCLAW_DISABLE_TALK_API: "1"
       OPENCLAW_DISABLE_CRON_API: "1"
       OPENCLAW_DISABLE_NODES_API: "1"
-      OPENCLAW_DISABLE_EXEC_APPROVALS_API: "1"
+      # Keep approvals API enabled for coding workflows that require approval gates.
+      OPENCLAW_DISABLE_EXEC_APPROVALS_API: "${OPENCLAW_DISABLE_EXEC_APPROVALS_API:-0}"
       OPENCLAW_DISABLE_VOICEWAKE_API: "1"
       OPENCLAW_DISABLE_DEVICE_API: "1"
 
@@ -62,9 +63,9 @@ services:
         "18789"
       ]
 
-  openclaw-acp:
-    image: ${OPENCLAW_IMAGE:-openclaw:local}
-    container_name: openclaw-acp
+  oktaclaw-acp:
+    image: ${OPENCLAW_IMAGE:-oktaclaw:local}
+    container_name: oktaclaw-acp
     profiles: ["acp"]
     init: true
     read_only: true
@@ -83,4 +84,4 @@ services:
     volumes:
       - ${OPENCLAW_STATE_DIR}:/home/node/.openclaw:rw
     entrypoint: ["node", "openclaw.mjs", "acp", "--url", "ws://127.0.0.1:18789", "--token", "${OPENCLAW_GATEWAY_TOKEN}"]
-    network_mode: service:openclaw-gateway
+    network_mode: service:oktaclaw-gateway
