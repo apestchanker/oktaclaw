@@ -3,6 +3,51 @@
 `OktaClaw` is this hardened fork/release profile.  
 Core CLI/env/runtime keys in code still use `openclaw` naming for compatibility.
 
+## 0) Windows + WSL Bootstrap (Required)
+
+Run these in **Windows PowerShell (Admin)**:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Then reboot Windows if prompted.
+
+Install these Windows apps:
+
+1. Docker Desktop (enable WSL2 backend).
+2. VS Code.
+3. Git for Windows.
+
+After Docker Desktop is installed:
+
+1. Open Docker Desktop -> `Settings` -> `Resources` -> `WSL Integration`.
+2. Enable integration for your Ubuntu distro.
+
+Open Ubuntu (WSL) and run:
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git
+node -v
+docker version
+docker compose version
+```
+
+If `node -v` is missing, install Node 22 LTS in WSL before continuing.
+
+Open your repo in VS Code from WSL:
+
+```bash
+cd ~/path/to/OKtavius/openclaw
+code .
+```
+
+Recommended VS Code extensions:
+
+1. `ms-vscode-remote.remote-wsl`
+2. Docker extension (optional, useful for logs/containers)
+
 ## 1) Analysis Conclusions
 
 1. OpenClaw codebase already supports plugin allowlisting, so we can run Telegram-only without loading other channels/plugins.
@@ -40,10 +85,7 @@ These files were added/modified:
 
 ## 3) Prerequisites (Windows)
 
-1. Install WSL2 + Ubuntu.
-2. Install Docker Desktop and enable WSL integration for your Ubuntu distro.
-3. Install VS Code on Windows.
-4. Confirm from WSL:
+Assuming Section `0` is complete, confirm from WSL:
 
 ```bash
 wsl -d Ubuntu
@@ -178,3 +220,113 @@ Upgrade (same hardening profile):
 docker build -t oktaclaw:local .
 docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml up -d --force-recreate oktaclaw-gateway
 ```
+
+## 11) First-Run Validation Checklist
+
+Use this checklist after first deployment.
+
+### 11.1 Environment validation
+
+Run:
+
+```bash
+docker version
+docker compose version
+```
+
+Pass criteria:
+
+1. Both commands return version information.
+2. No daemon connection error.
+
+### 11.2 Build validation
+
+Run:
+
+```bash
+docker build -t oktaclaw:local .
+```
+
+Pass criteria:
+
+1. Build completes without `ERROR`.
+2. Final image tag `oktaclaw:local` exists.
+
+Optional check:
+
+```bash
+docker images | grep oktaclaw
+```
+
+### 11.3 Gateway runtime validation
+
+Run:
+
+```bash
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml up -d oktaclaw-gateway
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml ps
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml logs --tail 120 oktaclaw-gateway
+```
+
+Pass criteria:
+
+1. `oktaclaw-gateway` shows `Up`.
+2. Logs do not show crash loop/restart loop.
+3. Telegram channel initializes without fatal token/config errors.
+
+### 11.4 Hardening validation
+
+Run:
+
+```bash
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml exec -T oktaclaw-gateway node openclaw.mjs plugins list
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml exec -T oktaclaw-gateway node openclaw.mjs channels status --probe
+```
+
+Pass criteria:
+
+1. Telegram is present/active.
+2. Non-telegram channels are not active.
+3. Browser tooling is enabled, but `browser.evaluateEnabled=false` remains in config.
+
+### 11.5 Telegram functional validation
+
+Actions:
+
+1. DM the bot from a non-allowlisted user.
+2. Confirm pairing behavior is enforced.
+3. Send a message from an allowlisted/approved user.
+4. Test one configured group with mention required.
+
+Pass criteria:
+
+1. Unknown DM does not get full bot access before pairing.
+2. Approved user receives responses.
+3. In group chat, bot responds only on mention (if configured).
+
+### 11.6 VS Code ACP bridge validation
+
+Run ACP service:
+
+```bash
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml run --rm --no-deps oktaclaw-acp
+```
+
+Pass criteria:
+
+1. Process starts without auth or connection errors.
+2. VS Code MCP server can connect and send prompts.
+
+### 11.7 Failure quick triage
+
+If checks fail, inspect:
+
+1. Container logs:
+
+```bash
+docker compose --env-file deploy/hardened/.env.hardened -f deploy/hardened/docker-compose.hardened.yml logs -f oktaclaw-gateway
+```
+
+2. Effective env values in `.env.hardened` (token/path typos are common).
+3. Telegram bot token validity with BotFather.
+4. Docker Desktop WSL integration is still enabled after updates.
