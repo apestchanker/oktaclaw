@@ -182,6 +182,7 @@ function filterDisabledMethods(methods: string[], env: NodeJS.ProcessEnv = proce
     blocked.add("exec.approvals.node.get");
     blocked.add("exec.approvals.node.set");
     blocked.add("exec.approval.request");
+    blocked.add("exec.approval.waitDecision");
     blocked.add("exec.approval.resolve");
   }
   if (featureDisabled("OPENCLAW_DISABLE_VOICEWAKE_API", env)) {
@@ -189,6 +190,7 @@ function filterDisabledMethods(methods: string[], env: NodeJS.ProcessEnv = proce
     blocked.add("voicewake.set");
   }
   if (featureDisabled("OPENCLAW_DISABLE_TALK_API", env)) {
+    blocked.add("talk.config");
     blocked.add("talk.mode");
   }
   if (featureDisabled("OPENCLAW_DISABLE_TTS_API", env)) {
