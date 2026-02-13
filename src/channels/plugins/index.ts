@@ -1,5 +1,6 @@
 import type { ChannelId, ChannelPlugin } from "./types.js";
 import { requireActivePluginRegistry } from "../../plugins/runtime.js";
+import { isTruthyEnvValue } from "../../infra/env.js";
 import { CHAT_CHANNEL_ORDER, type ChatChannelId, normalizeAnyChannelId } from "../registry.js";
 
 // Channel plugins registry (runtime).
@@ -11,7 +12,27 @@ import { CHAT_CHANNEL_ORDER, type ChatChannelId, normalizeAnyChannelId } from ".
 // Channel plugins are registered by the plugin loader (extensions/ or configured paths).
 function listPluginChannels(): ChannelPlugin[] {
   const registry = requireActivePluginRegistry();
-  return registry.channels.map((entry) => entry.plugin);
+  const plugins = registry.channels.map((entry) => entry.plugin);
+  const allowlist = resolveChannelAllowlistFromEnv();
+  if (allowlist.size === 0) {
+    return plugins;
+  }
+  return plugins.filter((plugin) => allowlist.has(plugin.id));
+}
+
+function resolveChannelAllowlistFromEnv(env: NodeJS.ProcessEnv = process.env): Set<string> {
+  if (isTruthyEnvValue(env.OPENCLAW_DISABLE_CHANNEL_ALLOWLIST)) {
+    return new Set();
+  }
+  const raw = env.OPENCLAW_CHANNEL_ALLOWLIST?.trim() ?? "";
+  if (!raw) {
+    return new Set();
+  }
+  const entries = raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return new Set(entries);
 }
 
 function dedupeChannels(channels: ChannelPlugin[]): ChannelPlugin[] {

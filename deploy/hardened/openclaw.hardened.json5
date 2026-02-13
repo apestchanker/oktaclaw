@@ -1,0 +1,79 @@
+{
+  gateway: {
+    bind: "loopback",
+    port: 18789,
+    auth: {
+      mode: "token",
+      token: "${OPENCLAW_GATEWAY_TOKEN}",
+    },
+    controlUi: {
+      enabled: false,
+    },
+  },
+
+  // Disable LAN discovery broadcasts.
+  discovery: {
+    mdns: { mode: "off" },
+    wideArea: { enabled: false },
+  },
+
+  // Disable browser automation surface for a Telegram + ACP-only deployment.
+  browser: {
+    enabled: false,
+    evaluateEnabled: false,
+  },
+
+  // Restrict plugin loading to Telegram only.
+  plugins: {
+    enabled: true,
+    allow: ["telegram"],
+    deny: [],
+    load: {
+      paths: [],
+    },
+    slots: {
+      memory: "none",
+    },
+    entries: {
+      telegram: {
+        enabled: true,
+      },
+    },
+  },
+
+  // No bundled skills. Keep watcher disabled.
+  skills: {
+    allowBundled: [],
+    load: {
+      watch: false,
+      extraDirs: [],
+    },
+    entries: {},
+  },
+
+  channels: {
+    telegram: {
+      enabled: true,
+      botToken: "${TELEGRAM_BOT_TOKEN}",
+
+      // DM policy: unknown users must pair before interaction.
+      dmPolicy: "pairing",
+
+      // Group policy: allowlist mode + explicit group ids only.
+      groupPolicy: "allowlist",
+
+      // Optional DM allowlist (numeric Telegram user IDs or usernames).
+      // allowFrom: ["123456789"],
+
+      // Configure only groups you trust.
+      groups: {
+        // Example group id:
+        // "-1001234567890": {
+        //   requireMention: true,
+        //   groupPolicy: "allowlist",
+        //   groupAllowFrom: ["123456789"],
+        // },
+      },
+    },
+  },
+}

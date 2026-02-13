@@ -25,6 +25,7 @@ import { usageHandlers } from "./server-methods/usage.js";
 import { voicewakeHandlers } from "./server-methods/voicewake.js";
 import { webHandlers } from "./server-methods/web.js";
 import { wizardHandlers } from "./server-methods/wizard.js";
+import { isTruthyEnvValue } from "../infra/env.js";
 
 const ADMIN_SCOPE = "operator.admin";
 const READ_SCOPE = "operator.read";
@@ -171,30 +172,38 @@ function authorizeGatewayMethod(method: string, client: GatewayRequestOptions["c
 export const coreGatewayHandlers: GatewayRequestHandlers = {
   ...connectHandlers,
   ...logsHandlers,
-  ...voicewakeHandlers,
   ...healthHandlers,
   ...channelsHandlers,
   ...chatHandlers,
-  ...cronHandlers,
-  ...deviceHandlers,
-  ...execApprovalsHandlers,
   ...webHandlers,
   ...modelsHandlers,
   ...configHandlers,
-  ...wizardHandlers,
-  ...talkHandlers,
-  ...ttsHandlers,
-  ...skillsHandlers,
   ...sessionsHandlers,
   ...systemHandlers,
-  ...updateHandlers,
-  ...nodeHandlers,
   ...sendHandlers,
   ...usageHandlers,
   ...agentHandlers,
   ...agentsHandlers,
-  ...browserHandlers,
+  ...(featureDisabled("OPENCLAW_DISABLE_VOICEWAKE_API") ? {} : voicewakeHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_CRON_API") ? {} : cronHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_DEVICE_API") ? {} : deviceHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_EXEC_APPROVALS_API") ? {} : execApprovalsHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_WIZARD_API") ? {} : wizardHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_TALK_API") ? {} : talkHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_TTS_API") ? {} : ttsHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_SKILLS_API") ? {} : skillsHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_UPDATE_API") ? {} : updateHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_NODES_API") ? {} : nodeHandlers),
+  ...(featureDisabled("OPENCLAW_DISABLE_BROWSER_API") ? {} : browserHandlers),
 };
+
+function featureDisabled(flag: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  const profile = env.OPENCLAW_SECURITY_PROFILE?.trim().toLowerCase();
+  if (profile === "minimal") {
+    return true;
+  }
+  return isTruthyEnvValue(env[flag]);
+}
 
 export async function handleGatewayRequest(
   opts: GatewayRequestOptions & { extraHandlers?: GatewayRequestHandlers },
